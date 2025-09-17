@@ -19,29 +19,29 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   bool _showTagline = false;
   String _taglineText = '';
   final String _fullTagline = 'BLITZ YOUR LIMITS';
+  final Random _random = Random();
 
   @override
   void initState() {
     super.initState();
 
-    // Logo materialization and pulse animation (0.8s spark, then pulse)
+    // Logo spark and pulse
     _logoController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
-    )..forward(); // Start the spark effect
+    )..forward();
 
     _logoScaleAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
       CurvedAnimation(parent: _logoController, curve: Curves.easeInOut),
     );
 
-    // Repeat pulse after initial animation
     _logoController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         _logoController.repeat(reverse: true, period: const Duration(seconds: 2));
       }
     });
 
-    // Progress bar animation
+    // Progress bar
     _progressAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: AnimationController(duration: const Duration(seconds: 5), vsync: this)..forward(),
@@ -49,23 +49,18 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       ),
     );
 
-    // Typewriter animation for tagline
+    // Typewriter for tagline
     Timer(const Duration(milliseconds: 1000), () {
       setState(() => _showTagline = true);
       _typewriterEffect();
     });
 
-    // Random lightning streaks (simulated with overlays)
-    Timer.periodic(const Duration(milliseconds: 1500), (timer) {
-      // We'll simulate streaks in the build method with random positions
-    });
-
-    // Transition to next screen after 5 seconds
+    // Transition to next
     _transitionTimer = Timer(const Duration(seconds: 5), () {
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => const AgeVerificationScreen(), // Placeholder for next screen
+          pageBuilder: (context, animation, secondaryAnimation) => const AgeVerificationScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },
@@ -98,158 +93,191 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     final size = MediaQuery.of(context).size;
     final isLandscape = size.width > size.height;
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Background gradient (black to deep purple)
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFF1A0033), Color(0xFF000000)],
+    return Directionality( // For RTL support (Arabic)
+      textDirection: TextDirection.ltr, // Default LTR; change to rtl for Arabic
+      child: Scaffold(
+        body: Stack(
+          children: [
+            // Gradient background (black to deep purple, softer for eyes)
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF1A0033), Color(0xFF000000)],
+                ),
               ),
             ),
-          ),
 
-          // Floating particles (purple, blue, yellow, floating upward with glow)
-          CircularParticle(
-            key: UniqueKey(),
-            awayRadius: size.height / 2,
-            numberOfParticles: 50,
-            speedOfParticles: 1,
-            height: size.height,
-            width: size.width,
-            onTapAnimation: false,
-            particleColor: [Colors.purple, Colors.blue, Colors.yellow],
-            awayAnimationDuration: const Duration(milliseconds: 600),
-            maxParticleSize: 4,
-            isRandSize: true,
-            isRandomColor: true,
-            connectDots: false,
-            enableHover: false,
-          ),
-
-          // Animated logo (lightning bolt with pulse and crackling)
-          Center(
-            child: AnimatedBuilder(
-              animation: _logoController,
-              builder: (context, child) {
-                return Transform.scale(
-                  scale: _logoScaleAnimation.value,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Icon(
-                        Icons.bolt,
-                        size: isLandscape ? size.height * 0.3 : size.width * 0.5,
-                        color: const Color(0xFF00D4FF), // Electric blue
-                        shadows: const [
-                          Shadow(color: Color(0xFFFFFF00), blurRadius: 20), // Yellow glow
-                        ],
-                      ),
-                      // Simulate crackling: Random small bolts (simple overlays)
-                      ...List.generate(3, (index) {
-                        final random = Random();
-                        return Positioned(
-                          top: random.nextDouble() * 50 - 25,
-                          left: random.nextDouble() * 50 - 25,
-                          child: Opacity(
-                            opacity: random.nextDouble(),
-                            child: Icon(
-                              Icons.bolt,
-                              size: 20,
-                              color: Colors.yellow.withOpacity(0.5),
-                            ),
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                );
-              },
+            // Particles with glow trails (purple, blue, yellow, orange for mix)
+            CircularParticle(
+              key: UniqueKey(),
+              awayRadius: size.height / 2,
+              numberOfParticles: 50,
+              speedOfParticles: 0.5, // Slower for trails
+              height: size.height,
+              width: size.width,
+              onTapAnimation: false,
+              particleColor: [Colors.purple, Colors.blue, Colors.yellow, Colors.orange],
+              awayAnimationDuration: const Duration(milliseconds: 1000),
+              maxParticleSize: 5,
+              isRandSize: true,
+              isRandomColor: true,
+              connectDots: false,
+              enableHover: false,
+              emissionFrequency: 0.2, // For subtle trails
             ),
-          ),
 
-          // App name with glowing neon effect
-          Positioned(
-            top: size.height * 0.2,
-            left: 0,
-            right: 0,
-            child: Text(
-              'GX Blitz',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.orbitron(
-                fontSize: isLandscape ? size.height * 0.08 : size.width * 0.1,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                shadows: [
-                  Shadow(color: const Color(0xFF00D4FF), blurRadius: 10), // Neon glow
-                ],
+            // Logo with pulse and crackling
+            Center(
+              child: AnimatedBuilder(
+                animation: _logoController,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: _logoScaleAnimation.value,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Icon(
+                          Icons.bolt,
+                          size: isLandscape ? size.height * 0.3 : size.width * 0.5,
+                          color: const Color(0xFF00D4FF), // Blue
+                          shadows: [
+                            Shadow(color: const Color(0xFFFFFF00).withOpacity(0.6), blurRadius: 15), // Yellow glow, softer
+                            Shadow(color: Colors.orange.withOpacity(0.4), blurRadius: 10), // Orange accent
+                          ],
+                        ),
+                        // Crackling edges with CustomPainter
+                        CustomPaint(
+                          size: Size(isLandscape ? size.height * 0.3 : size.width * 0.5, isLandscape ? size.height * 0.3 : size.width * 0.5),
+                          painter: CracklingPainter(_logoController.value, _random),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
-          ),
 
-          // Tagline with typewriter animation
-          if (_showTagline)
+            // App name with neon
             Positioned(
-              top: size.height * 0.35,
+              top: size.height * 0.2,
               left: 0,
               right: 0,
               child: Text(
-                _taglineText,
+                'GX Blitz',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.orbitron(
-                  fontSize: isLandscape ? size.height * 0.04 : size.width * 0.06,
-                  color: Colors.yellow,
+                  fontSize: isLandscape ? size.height * 0.08 : size.width * 0.1,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  shadows: [
+                    Shadow(color: const Color(0xFF00D4FF).withOpacity(0.7), blurRadius: 8), // Neon, softer
+                  ],
                 ),
               ),
             ),
 
-          // Progress bar at bottom with lightning fill
-          Positioned(
-            bottom: 20,
-            left: 20,
-            right: 20,
-            child: AnimatedBuilder(
-              animation: _progressAnimation,
-              builder: (context, child) {
-                return LinearProgressIndicator(
-                  value: _progressAnimation.value,
-                  backgroundColor: Colors.purple.withOpacity(0.3),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFFF00)), // Yellow lightning fill
-                  minHeight: 8,
-                  borderRadius: BorderRadius.circular(4),
-                );
-              },
-            ),
-          ),
+            // Tagline typewriter
+            if (_showTagline)
+              Positioned(
+                top: size.height * 0.35,
+                left: 0,
+                right: 0,
+                child: Text(
+                  _taglineText,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.orbitron(
+                    fontSize: isLandscape ? size.height * 0.04 : size.width * 0.06,
+                    color: Colors.yellow.withOpacity(0.8), // Softer for eyes
+                  ),
+                ),
+              ),
 
-          // Random lightning streaks across screen (simple animated lines)
-          ...List.generate(2, (index) {
-            final random = Random();
-            return Positioned(
-              top: random.nextDouble() * size.height,
-              left: random.nextDouble() * size.width,
-              child: AnimatedOpacity(
-                opacity: random.nextBool() ? 1.0 : 0.0,
+            // Progress bar with lightning fill
+            Positioned(
+              bottom: 20,
+              left: 20,
+              right: 20,
+              child: AnimatedBuilder(
+                animation: _progressAnimation,
+                builder: (context, child) {
+                  return LinearProgressIndicator(
+                    value: _progressAnimation.value,
+                    backgroundColor: Colors.purple.withOpacity(0.3),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.yellow.withOpacity(0.8)), // Softer fill
+                    minHeight: 8,
+                    borderRadius: BorderRadius.circular(4),
+                  );
+                },
+              ),
+            ),
+
+            // Random lightning streaks (enhanced with animation)
+            ...List.generate(3, (index) {
+              return AnimatedPositioned(
                 duration: const Duration(milliseconds: 500),
-                child: Container(
-                  width: 100,
-                  height: 2,
-                  color: Colors.blue,
-                  transform: Matrix4.rotationZ(random.nextDouble() * pi),
+                top: _random.nextDouble() * size.height,
+                left: _random.nextDouble() * size.width,
+                child: AnimatedOpacity(
+                  opacity: _random.nextDouble() * 0.7 + 0.3, // Varying opacity
+                  duration: const Duration(milliseconds: 800),
+                  child: Transform.rotate(
+                    angle: _random.nextDouble() * pi,
+                    child: Container(
+                      width: 150 + _random.nextDouble() * 100,
+                      height: 2,
+                      decoration: BoxDecoration(
+                        color: [_random.nextBool() ? Colors.blue : Colors.yellow, Colors.orange, Colors.red][_random.nextInt(3)].withOpacity(0.6),
+                        boxShadow: [
+                          BoxShadow(color: Colors.white.withOpacity(0.4), blurRadius: 5), // Glow for streak
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            );
-          }),
-        ],
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
 }
 
-// Placeholder for next screen (Age Verification) - we'll implement later
+// CustomPainter for crackling lightning around logo edges
+class CracklingPainter extends CustomPainter {
+  final double animationValue;
+  final Random random;
+
+  CracklingPainter(this.animationValue, this.random);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.yellow.withOpacity(0.5 * animationValue)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    for (int i = 0; i < 5; i++) { // 5 crackles
+      final startX = random.nextDouble() * size.width;
+      final startY = random.nextDouble() * size.height;
+      final endX = startX + (random.nextDouble() * 20 - 10);
+      final endY = startY + (random.nextDouble() * 20 - 10);
+      canvas.drawLine(Offset(startX, startY), Offset(endX, endY), paint);
+
+      // Branching for realism
+      final branchX = endX + (random.nextDouble() * 10 - 5);
+      final branchY = endY + (random.nextDouble() * 10 - 5);
+      canvas.drawLine(Offset(endX, endY), Offset(branchX, branchY), paint..color = Colors.blue.withOpacity(0.4));
+    }
+  }
+
+  @override
+  bool shouldRepaint(CracklingPainter oldDelegate) => animationValue != oldDelegate.animationValue;
+}
+
+// Placeholder for next screen
 class AgeVerificationScreen extends StatelessWidget {
   const AgeVerificationScreen({super.key});
 
